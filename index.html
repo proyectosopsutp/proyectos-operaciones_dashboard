@@ -455,8 +455,29 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
   border-radius:0;
   transition:width .2s ease;
 }
-.project-purchases-fill{
+ .project-purchases-fill{
   background:var(--ink);
+}
+.project-implementation-row{
+  margin-bottom:22px;
+}
+.project-follow-link{
+  display:block;
+  width:100%;
+  margin-top:0;
+  padding:9px 12px;
+  border:1px solid var(--border);
+  border-radius:7px;
+  background:var(--bg);
+  color:var(--red-dark);
+  text-align:center;
+  font-size:12px;
+  font-weight:700;
+  text-decoration:none;
+}
+.project-follow-link:hover{
+  background:var(--red-soft);
+  border-color:var(--red);
 }
 @media (max-width:900px){
   .project-detail-grid{
@@ -721,7 +742,7 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
 </div>
 <div class="table-wrap">
 <table>
-<thead><tr><th class="name-cell">Proyecto</th><th>Estado</th><th>% avance obra</th><th>% avance compras</th><th>Fecha objetivo</th><th>Con observaciones</th><th>Nueva fecha</th></tr></thead>
+<thead><tr><th class="name-cell">Proyecto</th><th>Estado</th><th>% avance obra</th><th>% avance compras</th><th>% avance implementación</th><th>Fecha objetivo</th><th>Con observaciones</th><th>Nueva fecha</th></tr></thead>
 <tbody id="tblProyectos"></tbody>
 </table>
 </div>
@@ -768,6 +789,21 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
             <div class="project-progress-fill project-purchases-fill" data-progress="compras" style="width:98%"></div>
           </div>
         </div>
+
+        <div class="project-progress-row project-implementation-row">
+          <div class="project-progress-label">
+            <span>Avance de implementación</span>
+            <strong class="project-kpi-value" data-kpi="implementacion">—</strong>
+          </div>
+          <div class="project-progress-track">
+            <div class="project-progress-fill" data-progress="implementacion" style="width:0%"></div>
+          </div>
+        </div>
+
+        <a class="project-follow-link"
+           href="https://seguimiento-proyectos-ops-utp.proyectos-ops-utp.workers.dev/"
+           target="_blank"
+           rel="noopener noreferrer">Ver seguimiento de implementación →</a>
       </div>
     </div>
   </div>
@@ -813,6 +849,21 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
             <div class="project-progress-fill project-purchases-fill" data-progress="compras" style="width:50%"></div>
           </div>
         </div>
+
+        <div class="project-progress-row project-implementation-row">
+          <div class="project-progress-label">
+            <span>Avance de implementación</span>
+            <strong class="project-kpi-value" data-kpi="implementacion">—</strong>
+          </div>
+          <div class="project-progress-track">
+            <div class="project-progress-fill" data-progress="implementacion" style="width:0%"></div>
+          </div>
+        </div>
+
+        <a class="project-follow-link"
+           href="https://seguimiento-proyectos-ops-utp.proyectos-ops-utp.workers.dev/"
+           target="_blank"
+           rel="noopener noreferrer">Ver seguimiento de implementación →</a>
       </div>
     </div>
   </div>
@@ -858,6 +909,21 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
             <div class="project-progress-fill project-purchases-fill" data-progress="compras" style="width:20%"></div>
           </div>
         </div>
+
+        <div class="project-progress-row project-implementation-row">
+          <div class="project-progress-label">
+            <span>Avance de implementación</span>
+            <strong class="project-kpi-value" data-kpi="implementacion">—</strong>
+          </div>
+          <div class="project-progress-track">
+            <div class="project-progress-fill" data-progress="implementacion" style="width:0%"></div>
+          </div>
+        </div>
+
+        <a class="project-follow-link"
+           href="https://seguimiento-proyectos-ops-utp.proyectos-ops-utp.workers.dev/"
+           target="_blank"
+           rel="noopener noreferrer">Ver seguimiento de implementación →</a>
       </div>
     </div>
   </div>
@@ -901,6 +967,21 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
             <div class="project-progress-fill project-purchases-fill" data-progress="compras" style="width:94%"></div>
           </div>
         </div>
+
+        <div class="project-progress-row project-implementation-row">
+          <div class="project-progress-label">
+            <span>Avance de implementación</span>
+            <strong class="project-kpi-value" data-kpi="implementacion">—</strong>
+          </div>
+          <div class="project-progress-track">
+            <div class="project-progress-fill" data-progress="implementacion" style="width:0%"></div>
+          </div>
+        </div>
+
+        <a class="project-follow-link"
+           href="https://seguimiento-proyectos-ops-utp.proyectos-ops-utp.workers.dev/"
+           target="_blank"
+           rel="noopener noreferrer">Ver seguimiento de implementación →</a>
       </div>
     </div>
   </div>
@@ -1217,22 +1298,32 @@ function renderMejorasEstadoExcel(){
 
 function updateProjectDetailExcel(sectionId, needle){
   var rows=BD_EXCEL.PROYECTOS || [];
-  var r=rows.find(function(x){return String(x.proyecto).toLowerCase().indexOf(needle.toLowerCase())!==-1;});
+  var r=rows.find(function(x){return String(x.proyecto).trim().toLowerCase()===needle.trim().toLowerCase();});
   var sec=document.getElementById(sectionId);
   if(!r || !sec) return;
 
   var obra=pctExcel(r.avance_obra_pct);
   var compras=pctExcel(r.avance_compras_pct);
+  var implementacion=pctExcel(r.avance_implementación_pct);
+
   var obraValue=sec.querySelector('[data-kpi="obra"]');
   var comprasValue=sec.querySelector('[data-kpi="compras"]');
+  var implementacionValue=sec.querySelector('[data-kpi="implementacion"]');
+
   var obraFill=sec.querySelector('[data-progress="obra"]');
   var comprasFill=sec.querySelector('[data-progress="compras"]');
+  var implementacionFill=sec.querySelector('[data-progress="implementacion"]');
+
   var date=sec.querySelector('[data-project-date]');
 
   if(obraValue) obraValue.textContent=obra+'%';
   if(comprasValue) comprasValue.textContent=compras+'%';
+  if(implementacionValue) implementacionValue.textContent=implementacion+'%';
+
   if(obraFill) obraFill.style.width=obra+'%';
   if(comprasFill) comprasFill.style.width=compras+'%';
+  if(implementacionFill) implementacionFill.style.width=implementacion+'%';
+
   if(date) date.textContent=r.fecha_objetivo_texto || '—';
 }
 function updateListoTrujilloExcel(){
@@ -1271,7 +1362,7 @@ function applyExcelToArrays(){
     RONDAS_TOTAL=['Total',sum(1),sum(2),sum(3),sum(4),k?pctExcel(k.valor):94];
   }
   if(BD_EXCEL.PROYECTOS){
-    PROYECTOS=BD_EXCEL.PROYECTOS.map(function(r){return [r.proyecto,r.estado,pctExcel(r.avance_obra_pct),pctExcel(r.avance_compras_pct),r.fecha_objetivo_texto,r.con_observaciones,r.nueva_fecha_texto];});
+    PROYECTOS=BD_EXCEL.PROYECTOS.map(function(r){return [r.proyecto,r.estado,pctExcel(r.avance_obra_pct),pctExcel(r.avance_compras_pct),pctExcel(r.avance_implementación_pct),r.fecha_objetivo_texto,r.con_observaciones,r.nueva_fecha_texto];});
   }
   if(BD_EXCEL.MEJORAS_PROGRAMACION){
     MEJORAS=BD_EXCEL.MEJORAS_PROGRAMACION.map(function(r){return [r.campus,r.fecha_inicio_texto||'',r.fecha_fin_texto||'',nExcel(r.mar),nExcel(r.abr),nExcel(r.may),nExcel(r.jun),nExcel(r.ago),nExcel(r.set),nExcel(r.oct),nExcel(r.nov),nExcel(r.total)];});
@@ -1342,9 +1433,10 @@ async function cargarExcelGitHub(){
   renderPresupuestoExcel();
   renderTopAulaExcel();
   renderMejorasEstadoExcel();
-  updateProjectDetailExcel('sec-proyectos-huanuco','Huánuco');
-  updateProjectDetailExcel('sec-proyectos-huamanga','Huamanga');
-  updateProjectDetailExcel('sec-proyectos-juliaca','Juliaca');
+  updateProjectDetailExcel('sec-proyectos-huanuco','Nuevo Campus Huánuco - ITSE - 14/08');
+  updateProjectDetailExcel('sec-proyectos-huamanga','Nuevo Campus Huamanga – ITSE – 22/09');
+  updateProjectDetailExcel('sec-proyectos-juliaca','Nuevo Campus Juliaca – ITSE - 18/11');
+  updateProjectDetailExcel('sec-proyectos-limanorte','Nuevo Edificio Campus Lima Norte (Salud) – Por definir ITSE');
   updateListoTrujilloExcel();
   applyConfigExcel();
 }
@@ -1487,8 +1579,8 @@ function renderProyectos(){
   body.innerHTML = rows.map(function(r){
     var obsCls = r[5]==='Sí' ? 'pill-amber' : 'pill-neutral';
     var estCls = r[1]==='En proceso' ? 'pill-green' : 'pill-neutral';
-    return '<tr><td class="name-cell">'+r[0]+'</td><td><span class="pill '+estCls+'">'+r[1]+'</span></td><td>'+progressCell(r[2])+'</td><td>'+progressCell(r[3])+'</td><td>'+r[4]+'</td><td><span class="pill '+obsCls+'">'+r[5]+'</span></td><td>'+r[6]+'</td></tr>';
-  }).join('') || '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">Sin resultados</td></tr>';
+    return '<tr><td class="name-cell">'+r[0]+'</td><td><span class="pill '+estCls+'">'+r[1]+'</span></td><td>'+progressCell(r[2])+'</td><td>'+progressCell(r[3])+'</td><td>'+progressCell(r[4])+'</td><td>'+r[5]+'</td><td><span class="pill '+obsCls+'">'+r[6]+'</span></td><td>'+r[7]+'</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:20px;">Sin resultados</td></tr>';
 }
 
 /* ---------- DATA: Mejoras matriz ---------- */
