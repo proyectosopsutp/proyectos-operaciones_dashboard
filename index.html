@@ -884,7 +884,7 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
 <div class="block-title">Cobertura por campus</div>
 <div class="block-sub">Dotación agosto 2026 vs. cobertura 17/09, por turno</div>
 <div class="filters">
-<input id="cobSearch" placeholder="Buscar campus…" type="text"/>
+<input id="cobSearch" placeholder="Buscar sede…" type="text"/>
 <select id="cobZona"><option value="">Toda zona</option><option value="LIMA">Lima</option><option value="PROVINCIA">Provincia</option></select>
 </div>
 <div class="table-wrap">
@@ -1298,8 +1298,8 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
 </div>
 <div class="block">
 <div class="block-title">Programación mensual por campus</div>
-<div class="block-sub">Número de iniciativas registradas por mes · total en matriz: 253</div>
-<div class="filters"><input id="mejSearch" placeholder="Buscar campus…" type="text"/></div>
+<div class="block-sub" id="mejorasDataStatus">Datos tomados de la hoja MEJORAS_PROGRAMACION del Excel de GitHub.</div>
+<div class="filters"><input id="mejSearch" placeholder="Buscar sede…" type="text"/></div>
 <div class="table-wrap">
 <table id="tableMejoras">
 <thead id="theadMejoras"><tr></tr></thead>
@@ -1866,7 +1866,7 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
 </div>
 <div class="block">
 <div class="block-title">Implementación 2026</div>
-<div class="filters"><input id="listoSearch" placeholder="Buscar campus…" type="text"/></div>
+<div class="filters"><input id="listoSearch" placeholder="Buscar sede…" type="text"/></div>
 <div class="table-wrap">
 <table>
 <thead><tr><th class="name-cell">Campus</th><th>Diseño</th><th>Obra</th><th>Operación</th><th>Fecha objetivo</th><th>Con observación</th><th>Nueva fecha</th></tr></thead>
@@ -1909,8 +1909,13 @@ function starsHTML(val){
 }
 
 
-/* ---------- Fuente de datos: PPT proporcionado ---------- */
-var EXCEL_GITHUB_URLS = ['./BD_dashboard_operaciones_github.xlsx']; var EXCEL_GITHUB_URL = EXCEL_GITHUB_URLS[0];
+/* ---------- Fuente de datos: Excel de GitHub ---------- */
+// Archivo Excel que debe estar en la MISMA carpeta que index.html en GitHub Pages.
+var EXCEL_GITHUB_FILENAME = 'BD_dashboard_operaciones_github.xlsx';
+var EXCEL_GITHUB_URLS = [
+  new URL(EXCEL_GITHUB_FILENAME, document.baseURI).href
+];
+var EXCEL_GITHUB_URL = EXCEL_GITHUB_URLS[0];
 var BD_EXCEL = {MEJORAS_PROGRAMACION: []};
 
 function nExcel(v){
@@ -2163,7 +2168,8 @@ syncMejorasTableSchema();
 
 function mejorasHeaderLabel(key){
   var labels={
-    campus:'Campus',
+    sede:'SEDE',
+    campus:'SEDE',
     fecha_inicio_texto:'Fecha Inicio',
     fecha_fin_texto:'Fecha fin',
     mar:'Mar', abr:'Abr', may:'May', jun:'Jun', jul:'Jul',
@@ -2189,34 +2195,47 @@ function isMejorasNumericColumn(rows,key){
   return found;
 }
 
+function findMejorasColumn(rows, candidates){
+  if(!rows || !rows.length) return null;
+  var keys=Object.keys(rows[0]||{});
+  for(var i=0;i<candidates.length;i++){
+    var wanted=String(candidates[i]).trim().toLowerCase();
+    var exact=keys.find(function(k){return String(k).trim().toLowerCase()===wanted;});
+    if(exact) return exact;
+  }
+  return null;
+}
+
 function syncMejorasTableSchema(){
-  var rows=BD_EXCEL.MEJORAS_PROGRAMACION || [];
+  var rows=(BD_EXCEL.MEJORAS_PROGRAMACION || []).filter(function(r){
+    return r && Object.keys(r).some(function(k){return r[k]!=='' && r[k]!==null && r[k]!==undefined;});
+  });
   var table=document.getElementById('tableMejoras');
   var thead=document.getElementById('theadMejoras');
   if(!table || !thead) return;
 
-  // Las columnas se toman directamente del encabezado de Excel:
-  // si se agrega o elimina una columna en MEJORAS_PROGRAMACION, el HTML se adapta.
   MEJORAS_EXCEL_ROWS=rows.slice();
   MEJORAS_EXCEL_COLUMNS=rows.length ? Object.keys(rows[0]) : [];
 
   var tr=document.createElement('tr');
   MEJORAS_EXCEL_COLUMNS.forEach(function(key,index){
     var th=document.createElement('th');
-    if(index===0) th.className='name-cell';
+    if(index===0 || /^(campus|sede)$/i.test(String(key).trim())) th.className='name-cell';
     th.textContent=mejorasHeaderLabel(key);
     tr.appendChild(th);
   });
   thead.innerHTML='';
   thead.appendChild(tr);
 }
-
 function renderMejorasDesdeExcel(){
   var body=document.getElementById('tblMejoras');
   if(!body || !MEJORAS_EXCEL_COLUMNS.length) return;
 
-  var q=((document.getElementById('mejSearch')||{}).value||'').toLowerCase();
-  var campusKey=MEJORAS_EXCEL_COLUMNS.indexOf('campus')!==-1 ? 'campus' : MEJORAS_EXCEL_COLUMNS[0];
+  var q=((document.getElementById('mejSearch')||{}).value||'').trim().toLowerCase();
+  // La columna SEDE SIEMPRE corresponde a la primera columna de la hoja
+  // MEJORAS_PROGRAMACION. Así se muestra el nombre real del Excel, sin
+  // sustituirlo por nombres de otra tabla o por datos embebidos en el HTML.
+  var campusKey=MEJORAS_EXCEL_COLUMNS[0];
 
   var rows=MEJORAS_EXCEL_ROWS.filter(function(r){
     return String(r[campusKey]??'').toLowerCase().indexOf(q)!==-1;
@@ -2229,7 +2248,8 @@ function renderMejorasDesdeExcel(){
 
   var html=rows.map(function(r){
     return '<tr>'+MEJORAS_EXCEL_COLUMNS.map(function(key,index){
-      var cls=index===0 ? ' class="name-cell"' : '';
+      var isName=(key===campusKey || index===0);
+      var cls=isName ? ' class="name-cell"' : '';
       var value=r[key];
       if(isMejorasNumericColumn(MEJORAS_EXCEL_ROWS,key) && value!=='' && value!==null && value!==undefined){
         value=nExcel(value);
@@ -2245,15 +2265,14 @@ function renderMejorasDesdeExcel(){
         value=MEJORAS_EXCEL_ROWS.reduce(function(sum,r){return sum+nExcel(r[key]);},0);
         if(String(key).toLowerCase()==='total') value=Math.round(value);
       }
-      var cls=index===0 ? ' class="name-cell"' : '';
-      if(index===0) value='Total general';
+      var cls=(key===campusKey || index===0) ? ' class="name-cell"' : '';
+      if(key===campusKey || index===0) value='Total general';
       return '<td'+cls+'>'+value+'</td>';
     }).join('')+'</tr>';
   }
 
   body.innerHTML=html || '<tr><td colspan="'+Math.max(MEJORAS_EXCEL_COLUMNS.length,1)+'" style="text-align:center; color:var(--muted); padding:20px;">Sin resultados</td></tr>';
 }
-
 function applyExcelToArrays(){
   if(BD_EXCEL.LIMPIEZA_COBERTURA){
     COBERTURA=BD_EXCEL.LIMPIEZA_COBERTURA.map(function(r){return [
@@ -2331,7 +2350,6 @@ function applyConfigExcel(){
 async function cargarExcelGitHub(){
   if(typeof XLSX==='undefined') throw new Error('No se cargó el lector de Excel (SheetJS).');
 
-  // El dashboard utiliza exclusivamente el archivo publicado en GitHub con este nombre.
   var resp=null, buffer=null, lastError=null;
   for(var ui=0; ui<EXCEL_GITHUB_URLS.length; ui++){
     var candidate=EXCEL_GITHUB_URLS[ui]+(EXCEL_GITHUB_URLS[ui].indexOf('?')===-1?'?':'&')+'v='+Date.now();
@@ -2349,28 +2367,48 @@ async function cargarExcelGitHub(){
   if(!resp || !buffer) throw (lastError || new Error('No se pudo leer el Excel de GitHub'));
 
   var workbook=XLSX.read(buffer,{type:'array',cellDates:false});
-
   var data={};
+
   workbook.SheetNames.forEach(function(sheetName){
     var ws=workbook.Sheets[sheetName];
-    data[sheetName]=XLSX.utils.sheet_to_json(ws,{defval:''});
+    data[sheetName]=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
   });
 
+  // MEJORAS_PROGRAMACION se busca sin depender de mayúsculas/minúsculas.
+  var mejorasSheetName=workbook.SheetNames.find(function(name){
+    return String(name).trim().toLowerCase()==='mejoras_programacion';
+  });
+  if(mejorasSheetName){
+    // Normaliza SOLO la primera columna de MEJORAS_PROGRAMACION a "sede",
+    // conservando exactamente el texto que viene del Excel.
+    var rawMejoras=data[mejorasSheetName] || [];
+    data.MEJORAS_PROGRAMACION=rawMejoras.map(function(row){
+      var out={};
+      var keys=Object.keys(row||{});
+      if(keys.length){
+        out.sede = row[keys[0]]===null || row[keys[0]]===undefined ? '' : String(row[keys[0]]);
+        for(var ki=1; ki<keys.length; ki++){ out[keys[ki]]=row[keys[ki]]; }
+      }
+      return out;
+    });
+  }
+
   if(!data || !data.KPIs_HTML) throw new Error('El Excel no contiene la hoja KPIs_HTML.');
+
+  // El Excel de GitHub es la fuente principal. Los datos embebidos en el HTML
+  // solo quedan como respaldo si el archivo no puede cargarse.
   BD_EXCEL=data;
 
-  // Conserva la información actualizada adjunta si el archivo remoto todavía contiene
-  // la versión anterior de esta tabla (total histórico 267). Si el remoto cambia
-  // columnas o contenido, se utiliza automáticamente la nueva versión del Excel.
-  var remoto=BD_EXCEL.MEJORAS_PROGRAMACION || [];
-  var actual=MEJORAS_PROGRAMACION_ACTUAL || [];
-  var colsRemoto=remoto.length ? Object.keys(remoto[0]) : [];
-  var colsActual=actual.length ? Object.keys(actual[0]) : [];
-  var totalRemoto=remoto.reduce(function(a,r){return a+nExcel(r.total);},0);
-  var totalActual=actual.reduce(function(a,r){return a+nExcel(r.total);},0);
-  if(!remoto.length || (JSON.stringify(colsRemoto)===JSON.stringify(colsActual) && totalRemoto===267 && totalActual===253)){
-    BD_EXCEL.MEJORAS_PROGRAMACION=actual.slice();
+  var remoto=Array.isArray(BD_EXCEL.MEJORAS_PROGRAMACION)
+    ? BD_EXCEL.MEJORAS_PROGRAMACION.filter(function(r){return r && Object.keys(r).length;})
+    : [];
+
+  if(!remoto.length){
+    throw new Error('El Excel no contiene datos en la hoja MEJORAS_PROGRAMACION.');
   }
+
+  // Conserva exactamente las filas y columnas del Excel remoto.
+  BD_EXCEL.MEJORAS_PROGRAMACION=remoto;
 
   syncMejorasTableSchema();
   applyExcelToArrays();
@@ -2384,8 +2422,12 @@ async function cargarExcelGitHub(){
   updateProjectDetailExcel('sec-proyectos-limanorte','Nuevo Edificio Campus Lima Norte (Salud) – Por definir ITSE');
   updateListoTrujilloExcel();
   applyConfigExcel();
-}
 
+  // Fuerza el render de la tabla después de leer el Excel.
+  renderMejorasDesdeExcel();
+  var status=document.getElementById('mejorasDataStatus');
+  if(status) status.textContent='Excel conectado · MEJORAS_PROGRAMACION · '+remoto.length+' sedes cargadas.';
+}
 function renderTodo(){
   renderCobertura();
   renderAula911();
@@ -2401,6 +2443,8 @@ async function refrescarDashboardDesdeExcel(){
     renderTodo();
     console.info('Dashboard actualizado desde Excel de GitHub:',new Date().toLocaleTimeString('es-PE'));
   }catch(err){
+    var status=document.getElementById('mejorasDataStatus');
+    if(status) status.textContent='No se pudo leer el Excel de GitHub. Se muestran los últimos datos disponibles.';
     console.warn('No se pudo leer el Excel de GitHub; se mantienen los últimos datos disponibles.',err);
   }
 }
