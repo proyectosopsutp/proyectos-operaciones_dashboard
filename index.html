@@ -1911,7 +1911,7 @@ function starsHTML(val){
 
 /* ---------- Fuente de datos: PPT proporcionado ---------- */
 var EXCEL_GITHUB_URL = './BD_dashboard_operaciones_github.xlsx';
-var BD_EXCEL = {};
+var BD_EXCEL = {MEJORAS_PROGRAMACION: []};
 
 function nExcel(v){
   if(v===null || v===undefined || v==='') return 0;
@@ -2144,6 +2144,12 @@ function updateListoTrujilloExcel(){
   if(nums[4]) nums[4].textContent=r.con_observacion || '—';
 }
 
+
+/* Datos actuales de MEJORAS_PROGRAMACION adjuntos por el usuario.
+   Se usan como respaldo para conservar la información actualizada si el Excel remoto
+   todavía no contiene estos datos. Si el Excel remoto cambia su estructura o contenido,
+   la tabla se adapta automáticamente. */
+var MEJORAS_PROGRAMACION_ACTUAL = [{"campus":"Corporativo - Natalio","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":1.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":3.0,"nov":0.0,"dic":0.0,"total":4.0},{"campus":"UTP Arequipa","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":1.0,"jun":7.0,"jul":0.0,"agos":6.0,"set":1.0,"oct":18.0,"nov":6.0,"dic":3.0,"total":42.0},{"campus":"UTP Chiclayo","fecha_inicio_texto":"","fecha_fin_texto":"","mar":3.0,"abr":0.0,"may":1.0,"jun":2.0,"jul":0.0,"agos":2.0,"set":2.0,"oct":4.0,"nov":3.0,"dic":1.0,"total":18.0},{"campus":"UTP Chimbote","fecha_inicio_texto":"","fecha_fin_texto":"","mar":1.0,"abr":0.0,"may":1.0,"jun":3.0,"jul":0.0,"agos":1.0,"set":1.0,"oct":2.0,"nov":1.0,"dic":1.0,"total":11.0},{"campus":"UTP Huancayo","fecha_inicio_texto":"","fecha_fin_texto":"","mar":3.0,"abr":0.0,"may":1.0,"jun":3.0,"jul":0.0,"agos":0.0,"set":1.0,"oct":2.0,"nov":2.0,"dic":1.0,"total":13.0},{"campus":"UTP Ica","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":2.0,"jun":2.0,"jul":0.0,"agos":2.0,"set":1.0,"oct":2.0,"nov":2.0,"dic":1.0,"total":12.0},{"campus":"UTP Iquitos","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":0.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":1.0,"nov":1.0,"dic":1.0,"total":3.0},{"campus":"UTP Lima Centro","fecha_inicio_texto":"","fecha_fin_texto":"","mar":7.0,"abr":1.0,"may":6.0,"jun":5.0,"jul":3.0,"agos":6.0,"set":5.0,"oct":19.0,"nov":7.0,"dic":4.0,"total":63.0},{"campus":"UTP Lima Este","fecha_inicio_texto":"","fecha_fin_texto":"","mar":3.0,"abr":0.0,"may":0.0,"jun":1.0,"jul":0.0,"agos":1.0,"set":1.0,"oct":4.0,"nov":1.0,"dic":1.0,"total":12.0},{"campus":"UTP Lima Norte","fecha_inicio_texto":"","fecha_fin_texto":"","mar":2.0,"abr":0.0,"may":0.0,"jun":1.0,"jul":0.0,"agos":1.0,"set":2.0,"oct":2.0,"nov":4.0,"dic":1.0,"total":13.0},{"campus":"UTP Lima Sur","fecha_inicio_texto":"","fecha_fin_texto":"","mar":5.0,"abr":1.0,"may":0.0,"jun":1.0,"jul":0.0,"agos":1.0,"set":0.0,"oct":3.0,"nov":2.0,"dic":1.0,"total":14.0},{"campus":"UTP Piura","fecha_inicio_texto":"","fecha_fin_texto":"","mar":2.0,"abr":0.0,"may":2.0,"jun":1.0,"jul":0.0,"agos":2.0,"set":0.0,"oct":4.0,"nov":2.0,"dic":1.0,"total":14.0},{"campus":"UTP Pucallpa","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":1.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":1.0,"nov":1.0,"dic":1.0,"total":4.0},{"campus":"UTP SJL","fecha_inicio_texto":"","fecha_fin_texto":"","mar":1.0,"abr":0.0,"may":1.0,"jun":1.0,"jul":0.0,"agos":1.0,"set":4.0,"oct":3.0,"nov":1.0,"dic":1.0,"total":13.0},{"campus":"UTP Tacna","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":1.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":1.0,"nov":1.0,"dic":1.0,"total":4.0},{"campus":"UTP Trujillo","fecha_inicio_texto":"","fecha_fin_texto":"","mar":1.0,"abr":0.0,"may":1.0,"jun":2.0,"jul":0.0,"agos":2.0,"set":2.0,"oct":1.0,"nov":2.0,"dic":1.0,"total":12.0},{"campus":"UTP EPG Salaverry","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":0.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":1.0,"nov":0.0,"dic":0.0,"total":1.0}];
 var MEJORAS_EXCEL_COLUMNS = [];
 var MEJORAS_EXCEL_ROWS = [];
 
@@ -2333,6 +2339,19 @@ async function cargarExcelGitHub(){
 
   if(!data || !data.KPIs_HTML) throw new Error('El Excel no contiene la hoja KPIs_HTML.');
   BD_EXCEL=data;
+
+  // Conserva la información actualizada adjunta si el archivo remoto todavía contiene
+  // la versión anterior de esta tabla (total histórico 267). Si el remoto cambia
+  // columnas o contenido, se utiliza automáticamente la nueva versión del Excel.
+  var remoto=BD_EXCEL.MEJORAS_PROGRAMACION || [];
+  var actual=MEJORAS_PROGRAMACION_ACTUAL || [];
+  var colsRemoto=remoto.length ? Object.keys(remoto[0]) : [];
+  var colsActual=actual.length ? Object.keys(actual[0]) : [];
+  var totalRemoto=remoto.reduce(function(a,r){return a+nExcel(r.total);},0);
+  var totalActual=actual.reduce(function(a,r){return a+nExcel(r.total);},0);
+  if(!remoto.length || (JSON.stringify(colsRemoto)===JSON.stringify(colsActual) && totalRemoto===267 && totalActual===253)){
+    BD_EXCEL.MEJORAS_PROGRAMACION=actual.slice();
+  }
 
   syncMejorasTableSchema();
   applyExcelToArrays();
