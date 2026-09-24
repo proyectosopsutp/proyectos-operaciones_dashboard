@@ -1910,7 +1910,7 @@ function starsHTML(val){
 
 
 /* ---------- Fuente de datos: PPT proporcionado ---------- */
-var EXCEL_GITHUB_URL = './BD_dashboard_operaciones_github.xlsx';
+var EXCEL_GITHUB_URLS = ['./BD_dashboard_operaciones_github.xlsx']; var EXCEL_GITHUB_URL = EXCEL_GITHUB_URLS[0];
 var BD_EXCEL = {MEJORAS_PROGRAMACION: []};
 
 function nExcel(v){
@@ -2323,12 +2323,23 @@ function applyConfigExcel(){
 async function cargarExcelGitHub(){
   if(typeof XLSX==='undefined') throw new Error('No se cargó el lector de Excel (SheetJS).');
 
-  // El parámetro evita que el navegador reutilice una versión anterior del Excel.
-  var url=EXCEL_GITHUB_URL+(EXCEL_GITHUB_URL.indexOf('?')===-1?'?':'&')+'v='+Date.now();
-  var resp=await fetch(url,{cache:'no-store',redirect:'follow'});
-  if(!resp.ok) throw new Error('No se pudo leer el Excel de GitHub ('+resp.status+')');
+  // El dashboard utiliza exclusivamente el archivo publicado en GitHub con este nombre.
+  var resp=null, buffer=null, lastError=null;
+  for(var ui=0; ui<EXCEL_GITHUB_URLS.length; ui++){
+    var candidate=EXCEL_GITHUB_URLS[ui]+(EXCEL_GITHUB_URLS[ui].indexOf('?')===-1?'?':'&')+'v='+Date.now();
+    try{
+      var rr=await fetch(candidate,{cache:'no-store',redirect:'follow'});
+      if(rr.ok){
+        resp=rr;
+        EXCEL_GITHUB_URL=EXCEL_GITHUB_URLS[ui];
+        buffer=await rr.arrayBuffer();
+        break;
+      }
+      lastError=new Error('HTTP '+rr.status+' para '+EXCEL_GITHUB_URLS[ui]);
+    }catch(e){ lastError=e; }
+  }
+  if(!resp || !buffer) throw (lastError || new Error('No se pudo leer el Excel de GitHub'));
 
-  var buffer=await resp.arrayBuffer();
   var workbook=XLSX.read(buffer,{type:'array',cellDates:false});
 
   var data={};
