@@ -1298,11 +1298,11 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
 </div>
 <div class="block">
 <div class="block-title">Programación mensual por campus</div>
-<div class="block-sub">Número de iniciativas registradas por mes · total en matriz: 267</div>
+<div class="block-sub">Número de iniciativas registradas por mes · total en matriz: 253</div>
 <div class="filters"><input id="mejSearch" placeholder="Buscar campus…" type="text"/></div>
 <div class="table-wrap">
-<table>
-<thead><tr><th class="name-cell">Campus</th><th>Fecha Inicio</th><th>Fecha fin</th><th>Mar</th><th>Abr</th><th>May</th><th>Jun</th><th>Ago</th><th>Set</th><th>Oct</th><th>Nov</th><th>Total</th></tr></thead>
+<table id="tableMejoras">
+<thead id="theadMejoras"><tr></tr></thead>
 <tbody id="tblMejoras"></tbody>
 </table>
 </div>
@@ -2144,6 +2144,102 @@ function updateListoTrujilloExcel(){
   if(nums[4]) nums[4].textContent=r.con_observacion || '—';
 }
 
+var MEJORAS_EXCEL_COLUMNS = [];
+var MEJORAS_EXCEL_ROWS = [];
+
+function mejorasHeaderLabel(key){
+  var labels={
+    campus:'Campus',
+    fecha_inicio_texto:'Fecha Inicio',
+    fecha_fin_texto:'Fecha fin',
+    mar:'Mar', abr:'Abr', may:'May', jun:'Jun', jul:'Jul',
+    agos:'Agos', ago:'Ago', set:'Set', oct:'Oct', nov:'Nov', dic:'Dic',
+    total:'Total'
+  };
+  var k=String(key||'').trim();
+  if(labels[k]) return labels[k];
+  return k.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+}
+
+function isMejorasNumericColumn(rows,key){
+  var found=false;
+  for(var i=0;i<rows.length;i++){
+    var v=rows[i][key];
+    if(v===null || v===undefined || v==='') continue;
+    found=true;
+    if(typeof v==='number' && Number.isFinite(v)) continue;
+    var n=nExcel(v);
+    if(String(v).trim()!=='' && Number.isFinite(n)) continue;
+    return false;
+  }
+  return found;
+}
+
+function syncMejorasTableSchema(){
+  var rows=BD_EXCEL.MEJORAS_PROGRAMACION || [];
+  var table=document.getElementById('tableMejoras');
+  var thead=document.getElementById('theadMejoras');
+  if(!table || !thead) return;
+
+  // Las columnas se toman directamente del encabezado de Excel:
+  // si se agrega o elimina una columna en MEJORAS_PROGRAMACION, el HTML se adapta.
+  MEJORAS_EXCEL_ROWS=rows.slice();
+  MEJORAS_EXCEL_COLUMNS=rows.length ? Object.keys(rows[0]) : [];
+
+  var tr=document.createElement('tr');
+  MEJORAS_EXCEL_COLUMNS.forEach(function(key,index){
+    var th=document.createElement('th');
+    if(index===0) th.className='name-cell';
+    th.textContent=mejorasHeaderLabel(key);
+    tr.appendChild(th);
+  });
+  thead.innerHTML='';
+  thead.appendChild(tr);
+}
+
+function renderMejorasDesdeExcel(){
+  var body=document.getElementById('tblMejoras');
+  if(!body || !MEJORAS_EXCEL_COLUMNS.length) return;
+
+  var q=((document.getElementById('mejSearch')||{}).value||'').toLowerCase();
+  var campusKey=MEJORAS_EXCEL_COLUMNS.indexOf('campus')!==-1 ? 'campus' : MEJORAS_EXCEL_COLUMNS[0];
+
+  var rows=MEJORAS_EXCEL_ROWS.filter(function(r){
+    return String(r[campusKey]??'').toLowerCase().indexOf(q)!==-1;
+  });
+
+  function cellValue(v){
+    if(v===null || v===undefined || v==='') return '<span style="color:var(--muted-2)">—</span>';
+    return String(v);
+  }
+
+  var html=rows.map(function(r){
+    return '<tr>'+MEJORAS_EXCEL_COLUMNS.map(function(key,index){
+      var cls=index===0 ? ' class="name-cell"' : '';
+      var value=r[key];
+      if(isMejorasNumericColumn(MEJORAS_EXCEL_ROWS,key) && value!=='' && value!==null && value!==undefined){
+        value=nExcel(value);
+      }
+      return '<td'+cls+'>'+cellValue(value)+'</td>';
+    }).join('')+'</tr>';
+  }).join('');
+
+  if(!q && rows.length){
+    html+='<tr class="total-row">'+MEJORAS_EXCEL_COLUMNS.map(function(key,index){
+      var value='';
+      if(isMejorasNumericColumn(MEJORAS_EXCEL_ROWS,key)){
+        value=MEJORAS_EXCEL_ROWS.reduce(function(sum,r){return sum+nExcel(r[key]);},0);
+        if(String(key).toLowerCase()==='total') value=Math.round(value);
+      }
+      var cls=index===0 ? ' class="name-cell"' : '';
+      if(index===0) value='Total general';
+      return '<td'+cls+'>'+value+'</td>';
+    }).join('')+'</tr>';
+  }
+
+  body.innerHTML=html || '<tr><td colspan="'+Math.max(MEJORAS_EXCEL_COLUMNS.length,1)+'" style="text-align:center; color:var(--muted); padding:20px;">Sin resultados</td></tr>';
+}
+
 function applyExcelToArrays(){
   if(BD_EXCEL.LIMPIEZA_COBERTURA){
     COBERTURA=BD_EXCEL.LIMPIEZA_COBERTURA.map(function(r){return [
@@ -2170,9 +2266,14 @@ function applyExcelToArrays(){
     PROYECTOS=BD_EXCEL.PROYECTOS.map(function(r){return [r.proyecto,r.estado,pctExcel(r.avance_obra_pct),pctExcel(r.avance_compras_pct),pctExcel(r.avance_implementación_pct),r.fecha_objetivo_texto,r.con_observaciones,r.nueva_fecha_texto];});
   }
   if(BD_EXCEL.MEJORAS_PROGRAMACION){
-    MEJORAS=BD_EXCEL.MEJORAS_PROGRAMACION.map(function(r){return [r.campus,r.fecha_inicio_texto||'',r.fecha_fin_texto||'',nExcel(r.mar),nExcel(r.abr),nExcel(r.may),nExcel(r.jun),nExcel(r.ago),nExcel(r.set),nExcel(r.oct),nExcel(r.nov),nExcel(r.total)];});
-    var totals=[]; for(var i=3;i<=11;i++) totals.push(MEJORAS.reduce(function(a,r){return a+r[i];},0));
-    MEJORAS_TOTAL=['Total general','',''].concat(totals);
+    // Esta tabla queda vinculada 1:1 al encabezado de Excel.
+    // No se fija una cantidad de columnas en el HTML.
+    MEJORAS_EXCEL_ROWS=BD_EXCEL.MEJORAS_PROGRAMACION.slice();
+    MEJORAS_EXCEL_COLUMNS=MEJORAS_EXCEL_ROWS.length ? Object.keys(MEJORAS_EXCEL_ROWS[0]) : [];
+    MEJORAS=MEJORAS_EXCEL_ROWS.map(function(r){
+      return MEJORAS_EXCEL_COLUMNS.map(function(key){ return r[key]; });
+    });
+    syncMejorasTableSchema();
   }
   if(BD_EXCEL.LISTO){
     LISTO=BD_EXCEL.LISTO.map(function(r){return [r.campus,pctExcel(r.diseno_pct),pctExcel(r.obra_pct),r.operacion,r.fecha_objetivo_texto,r.con_observacion,r.nueva_fecha_texto];});
@@ -2233,6 +2334,7 @@ async function cargarExcelGitHub(){
   if(!data || !data.KPIs_HTML) throw new Error('El Excel no contiene la hoja KPIs_HTML.');
   BD_EXCEL=data;
 
+  syncMejorasTableSchema();
   applyExcelToArrays();
   applyKpisExcel();
   renderPresupuestoExcel();
@@ -2389,21 +2491,12 @@ function renderProyectos(){
 }
 
 /* ---------- DATA: Mejoras matriz ---------- */
-var MEJORAS = [["Corporativo - Natalio","","",0,0,1,0,1,2,0,0,4],["UTP Arequipa","","",0,0,1,7,18,11,1,6,44],["UTP Chiclayo","","",3,0,1,2,10,1,0,2,19],["UTP Chimbote","","",1,0,1,3,4,3,0,0,12],["UTP Huancayo","","",3,0,1,3,5,1,1,1,15],["UTP Ica","","",0,0,2,2,7,1,0,1,13],["UTP Iquitos","","",0,0,0,0,1,1,2,0,4],["UTP Lima Centro","","",7,1,6,5,26,10,3,7,65],["UTP Lima Este","","",3,0,0,1,7,2,0,0,13],["UTP Lima Norte","","",2,0,0,1,6,3,0,2,14],["UTP Lima Sur","","",5,1,0,1,4,2,0,1,14],["UTP Piura","","",2,0,2,1,7,2,0,1,15],["UTP Pucallpa","","",0,0,1,0,1,2,0,0,4],["UTP SJL","","",1,0,1,1,7,2,0,1,13],["UTP Tacna","","",0,0,1,0,1,2,0,0,4],["UTP Trujillo","","",1,0,1,2,5,2,1,1,13],["UTP EPG Salaverry","","",0,0,0,0,0,1,0,0,1]];
-var MEJORAS_TOTAL = ["Total general", "", "", 28, 2, 19, 29, 110, 48, 8, 23, 267];
+var MEJORAS = [["Corporativo - Natalio","","",0,0,1,0,0,0,0,3,0,0,4],["UTP Arequipa","","",0,0,1,7,0,6,1,18,6,3,42],["UTP Chiclayo","","",3,0,1,2,0,2,2,4,3,1,18],["UTP Chimbote","","",1,0,1,3,0,1,1,2,1,1,11],["UTP Huancayo","","",3,0,1,3,0,0,1,2,2,1,13],["UTP Ica","","",0,0,2,2,0,2,1,2,2,1,12],["UTP Iquitos","","",0,0,0,0,0,0,0,1,1,1,3],["UTP Lima Centro","","",7,1,6,5,3,6,5,19,7,4,63],["UTP Lima Este","","",3,0,0,1,0,1,1,4,1,1,12],["UTP Lima Norte","","",2,0,0,1,0,1,2,2,4,1,13],["UTP Lima Sur","","",5,1,0,1,0,1,0,3,2,1,14],["UTP Piura","","",2,0,2,1,0,2,0,4,2,1,14],["UTP Pucallpa","","",0,0,1,0,0,0,0,1,1,1,4],["UTP SJL","","",1,0,1,1,0,1,4,3,1,1,13],["UTP Tacna","","",0,0,1,0,0,0,0,1,1,1,4],["UTP Trujillo","","",1,0,1,2,0,2,2,1,2,1,12],["UTP EPG Salaverry","","",0,0,0,0,0,0,0,1,0,0,1]];
+var MEJORAS_TOTAL = ["Total general","","",28,2,19,29,3,25,20,71,36,20,253];
 
 function renderMejoras(){
-  var body = document.getElementById('tblMejoras');
-  var q = (document.getElementById('mejSearch').value||'').toLowerCase();
-  var rows = MEJORAS.filter(function(r){ return r[0].toLowerCase().indexOf(q)!==-1; });
-  var html = rows.map(function(r){
-    return '<tr><td class="name-cell">'+r[0]+'</td><td>'+ (r[1]||'') +'</td><td>'+ (r[2]||'') +'</td>'+r.slice(3,11).map(function(v){return '<td class="tabular">'+(v?v:'<span style="color:var(--muted-2)">—</span>')+'</td>';}).join('')+'<td class="tabular" style="font-weight:700">'+r[11]+'</td></tr>';
-  }).join('');
-  if(!q){
-    var t = MEJORAS_TOTAL;
-    html += '<tr class="total-row"><td class="name-cell">'+t[0]+'</td><td></td><td></td>'+t.slice(3,11).map(function(v){return '<td class="tabular">'+v+'</td>';}).join('')+'<td class="tabular">'+t[11]+'</td></tr>';
-  }
-  body.innerHTML = html || '<tr><td colspan="12" style="text-align:center; color:var(--muted); padding:20px;">Sin resultados</td></tr>';
+  // La estructura de la tabla se genera desde las columnas actuales del Excel.
+  renderMejorasDesdeExcel();
 }
 
 /* ---------- DATA: Listo ---------- */
