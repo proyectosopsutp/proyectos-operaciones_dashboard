@@ -2150,8 +2150,8 @@ function updateListoTrujilloExcel(){
    todavía no contiene estos datos. Si el Excel remoto cambia su estructura o contenido,
    la tabla se adapta automáticamente. */
 var MEJORAS_PROGRAMACION_ACTUAL = [{"campus":"Corporativo - Natalio","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":1.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":3.0,"nov":0.0,"dic":0.0,"total":4.0},{"campus":"UTP Arequipa","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":1.0,"jun":7.0,"jul":0.0,"agos":6.0,"set":1.0,"oct":18.0,"nov":6.0,"dic":3.0,"total":42.0},{"campus":"UTP Chiclayo","fecha_inicio_texto":"","fecha_fin_texto":"","mar":3.0,"abr":0.0,"may":1.0,"jun":2.0,"jul":0.0,"agos":2.0,"set":2.0,"oct":4.0,"nov":3.0,"dic":1.0,"total":18.0},{"campus":"UTP Chimbote","fecha_inicio_texto":"","fecha_fin_texto":"","mar":1.0,"abr":0.0,"may":1.0,"jun":3.0,"jul":0.0,"agos":1.0,"set":1.0,"oct":2.0,"nov":1.0,"dic":1.0,"total":11.0},{"campus":"UTP Huancayo","fecha_inicio_texto":"","fecha_fin_texto":"","mar":3.0,"abr":0.0,"may":1.0,"jun":3.0,"jul":0.0,"agos":0.0,"set":1.0,"oct":2.0,"nov":2.0,"dic":1.0,"total":13.0},{"campus":"UTP Ica","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":2.0,"jun":2.0,"jul":0.0,"agos":2.0,"set":1.0,"oct":2.0,"nov":2.0,"dic":1.0,"total":12.0},{"campus":"UTP Iquitos","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":0.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":1.0,"nov":1.0,"dic":1.0,"total":3.0},{"campus":"UTP Lima Centro","fecha_inicio_texto":"","fecha_fin_texto":"","mar":7.0,"abr":1.0,"may":6.0,"jun":5.0,"jul":3.0,"agos":6.0,"set":5.0,"oct":19.0,"nov":7.0,"dic":4.0,"total":63.0},{"campus":"UTP Lima Este","fecha_inicio_texto":"","fecha_fin_texto":"","mar":3.0,"abr":0.0,"may":0.0,"jun":1.0,"jul":0.0,"agos":1.0,"set":1.0,"oct":4.0,"nov":1.0,"dic":1.0,"total":12.0},{"campus":"UTP Lima Norte","fecha_inicio_texto":"","fecha_fin_texto":"","mar":2.0,"abr":0.0,"may":0.0,"jun":1.0,"jul":0.0,"agos":1.0,"set":2.0,"oct":2.0,"nov":4.0,"dic":1.0,"total":13.0},{"campus":"UTP Lima Sur","fecha_inicio_texto":"","fecha_fin_texto":"","mar":5.0,"abr":1.0,"may":0.0,"jun":1.0,"jul":0.0,"agos":1.0,"set":0.0,"oct":3.0,"nov":2.0,"dic":1.0,"total":14.0},{"campus":"UTP Piura","fecha_inicio_texto":"","fecha_fin_texto":"","mar":2.0,"abr":0.0,"may":2.0,"jun":1.0,"jul":0.0,"agos":2.0,"set":0.0,"oct":4.0,"nov":2.0,"dic":1.0,"total":14.0},{"campus":"UTP Pucallpa","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":1.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":1.0,"nov":1.0,"dic":1.0,"total":4.0},{"campus":"UTP SJL","fecha_inicio_texto":"","fecha_fin_texto":"","mar":1.0,"abr":0.0,"may":1.0,"jun":1.0,"jul":0.0,"agos":1.0,"set":4.0,"oct":3.0,"nov":1.0,"dic":1.0,"total":13.0},{"campus":"UTP Tacna","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":1.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":1.0,"nov":1.0,"dic":1.0,"total":4.0},{"campus":"UTP Trujillo","fecha_inicio_texto":"","fecha_fin_texto":"","mar":1.0,"abr":0.0,"may":1.0,"jun":2.0,"jul":0.0,"agos":2.0,"set":2.0,"oct":1.0,"nov":2.0,"dic":1.0,"total":12.0},{"campus":"UTP EPG Salaverry","fecha_inicio_texto":"","fecha_fin_texto":"","mar":0.0,"abr":0.0,"may":0.0,"jun":0.0,"jul":0.0,"agos":0.0,"set":0.0,"oct":1.0,"nov":0.0,"dic":0.0,"total":1.0}];
-var MEJORAS_EXCEL_COLUMNS = [];
-var MEJORAS_EXCEL_ROWS = [];
+var MEJORAS_EXCEL_COLUMNS = MEJORAS_PROGRAMACION_ACTUAL.length ? Object.keys(MEJORAS_PROGRAMACION_ACTUAL[0]) : [];
+var MEJORAS_EXCEL_ROWS = MEJORAS_PROGRAMACION_ACTUAL.slice();
 
 function mejorasHeaderLabel(key){
   var labels={
@@ -2514,7 +2514,13 @@ var MEJORAS = [["Corporativo - Natalio","","",0,0,1,0,0,0,0,3,0,0,4],["UTP Arequ
 var MEJORAS_TOTAL = ["Total general","","",28,2,19,29,3,25,20,71,36,20,253];
 
 function renderMejoras(){
-  // La estructura de la tabla se genera desde las columnas actuales del Excel.
+  // Mostrar de inmediato la información actualizada incorporada en el HTML.
+  // Cuando el Excel de GitHub cargue correctamente, la tabla se reemplaza por sus datos y columnas.
+  if(!MEJORAS_EXCEL_COLUMNS.length && MEJORAS_PROGRAMACION_ACTUAL.length){
+    MEJORAS_EXCEL_ROWS=MEJORAS_PROGRAMACION_ACTUAL.slice();
+    MEJORAS_EXCEL_COLUMNS=Object.keys(MEJORAS_PROGRAMACION_ACTUAL[0]);
+    syncMejorasTableSchema();
+  }
   renderMejorasDesdeExcel();
 }
 
