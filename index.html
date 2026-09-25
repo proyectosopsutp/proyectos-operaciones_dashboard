@@ -1297,13 +1297,34 @@ footer.foot{padding:26px 32px 50px; color:var(--muted-2); font-size:11.5px; bord
 </div>
 </div>
 <div class="block">
-<div class="block-title">Programación mensual por campus</div>
+<div class="block-title">Programación mensual por sede</div>
 <div class="block-sub" id="mejorasDataStatus">Datos tomados de la hoja MEJORAS_PROGRAMACION del Excel de GitHub.</div>
 <div class="filters"><input id="mejSearch" placeholder="Buscar sede…" type="text"/></div>
+<div class="block-sub" style="margin-top:-4px; margin-bottom:10px;">SEDE: lista tomada de MEJORAS_PROGRAMACION · 17 sedes</div>
 <div class="table-wrap">
 <table id="tableMejoras">
-<thead id="theadMejoras"><tr></tr></thead>
-<tbody id="tblMejoras"></tbody>
+<thead id="theadMejoras"><tr>
+<th class="name-cell">SEDE</th><th>Fecha Inicio</th><th>Fecha fin</th><th>Mar</th><th>Abr</th><th>May</th><th>Jun</th><th>Jul</th><th>Agos</th><th>Set</th><th>Oct</th><th>Nov</th><th>Dic</th><th>Total</th>
+</tr></thead>
+<tbody id="tblMejoras">
+<tr><td class="name-cell">Corporativo - Natalio</td><td>—</td><td>—</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>3</td><td>0</td><td>0</td><td>4</td></tr>
+<tr><td class="name-cell">UTP Arequipa</td><td>—</td><td>—</td><td>0</td><td>0</td><td>1</td><td>7</td><td>0</td><td>6</td><td>1</td><td>18</td><td>6</td><td>3</td><td>42</td></tr>
+<tr><td class="name-cell">UTP Chiclayo</td><td>—</td><td>—</td><td>3</td><td>0</td><td>1</td><td>2</td><td>0</td><td>2</td><td>2</td><td>4</td><td>3</td><td>1</td><td>18</td></tr>
+<tr><td class="name-cell">UTP Chimbote</td><td>—</td><td>—</td><td>1</td><td>0</td><td>1</td><td>3</td><td>0</td><td>1</td><td>1</td><td>2</td><td>1</td><td>1</td><td>11</td></tr>
+<tr><td class="name-cell">UTP Huancayo</td><td>—</td><td>—</td><td>3</td><td>0</td><td>1</td><td>3</td><td>0</td><td>0</td><td>1</td><td>2</td><td>2</td><td>1</td><td>13</td></tr>
+<tr><td class="name-cell">UTP Ica</td><td>—</td><td>—</td><td>0</td><td>0</td><td>2</td><td>2</td><td>0</td><td>2</td><td>1</td><td>2</td><td>2</td><td>1</td><td>12</td></tr>
+<tr><td class="name-cell">UTP Iquitos</td><td>—</td><td>—</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>3</td></tr>
+<tr><td class="name-cell">UTP Lima Centro</td><td>—</td><td>—</td><td>7</td><td>1</td><td>6</td><td>5</td><td>3</td><td>6</td><td>5</td><td>19</td><td>7</td><td>4</td><td>63</td></tr>
+<tr><td class="name-cell">UTP Lima Este</td><td>—</td><td>—</td><td>3</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td><td>4</td><td>1</td><td>1</td><td>12</td></tr>
+<tr><td class="name-cell">UTP Lima Norte</td><td>—</td><td>—</td><td>2</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>2</td><td>2</td><td>4</td><td>1</td><td>13</td></tr>
+<tr><td class="name-cell">UTP Lima Sur</td><td>—</td><td>—</td><td>5</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>3</td><td>2</td><td>1</td><td>14</td></tr>
+<tr><td class="name-cell">UTP Piura</td><td>—</td><td>—</td><td>2</td><td>0</td><td>2</td><td>1</td><td>0</td><td>2</td><td>0</td><td>4</td><td>2</td><td>1</td><td>14</td></tr>
+<tr><td class="name-cell">UTP Pucallpa</td><td>—</td><td>—</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>4</td></tr>
+<tr><td class="name-cell">UTP SJL</td><td>—</td><td>—</td><td>1</td><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>4</td><td>3</td><td>1</td><td>1</td><td>13</td></tr>
+<tr><td class="name-cell">UTP Tacna</td><td>—</td><td>—</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>4</td></tr>
+<tr><td class="name-cell">UTP Trujillo</td><td>—</td><td>—</td><td>1</td><td>0</td><td>1</td><td>2</td><td>0</td><td>2</td><td>2</td><td>1</td><td>2</td><td>1</td><td>12</td></tr>
+<tr><td class="name-cell">UTP EPG Salaverry</td><td>—</td><td>—</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+</tbody>
 </table>
 </div>
 </div>
