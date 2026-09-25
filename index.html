@@ -1952,8 +1952,8 @@ function starsHTML(val){
 /* ---------- Fuente de datos: Google Sheets + respaldo Excel de GitHub ---------- */
 // Google Sheets es la fuente principal. El Excel de GitHub queda como respaldo.
 // La hoja debe mantenerse publicada en la Web para que el dashboard público pueda leerla.
-var GOOGLE_SHEETS_PUBLISHED_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTePAAad2CmO5TY4yJWliQoSD5tvGQejwPcGdh6zPJs6wpK4JE5aAlZibUsjNQOBw/pubhtml';
-var GOOGLE_SHEETS_XLSX_URL = GOOGLE_SHEETS_PUBLISHED_URL.replace(/\/pubhtml(?:\?.*)?$/,'/pub?output=xlsx');
+var GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1YMIwxBzFM_kwAW77fCCcGTZmsx_hmOTi/edit';
+var GOOGLE_SHEETS_XLSX_URL = 'https://docs.google.com/spreadsheets/d/1YMIwxBzFM_kwAW77fCCcGTZmsx_hmOTi/export?format=xlsx';
 var EXCEL_GITHUB_FILENAME = 'BD_dashboard_operaciones_github.xlsx';
 var EXCEL_GITHUB_URLS = [
   new URL(EXCEL_GITHUB_FILENAME, document.baseURI).href
@@ -2036,13 +2036,7 @@ function nExcel(v){
   if(!Number.isFinite(n)) return 0;
   return esPorcentaje ? n/100 : n;
 }
-function pctExcel(v){
-  var n=nExcel(v);
-  // Google Sheets puede entregar porcentajes como 1 (=100%) o como 100 (=100%).
-  // Normalizamos ambos formatos para que el dashboard muestre 100%, no 10000%.
-  if(Math.abs(n)>1) n=n/100;
-  return Math.round(n*1000)/10;
-}
+function pctExcel(v){ return Math.round(nExcel(v)*1000)/10; }
 function kpiExcel(modulo, indicador){
   var rows = BD_EXCEL.KPIs_HTML || [];
   return rows.find(function(r){ return r.modulo===modulo && r.indicador===indicador; });
@@ -2050,10 +2044,7 @@ function kpiExcel(modulo, indicador){
 function formatKpiExcel(row){
   if(!row) return null;
   var v=nExcel(row.valor), u=row.unidad;
-  if(u==='porcentaje'){
-    if(Math.abs(v)>1) v=v/100;
-    return (Math.round(v*1000)/10).toLocaleString('es-PE')+'%';
-  }
+  if(u==='porcentaje') return (Math.round(v*1000)/10).toLocaleString('es-PE')+'%';
   if(u==='entero') return Math.round(v).toLocaleString('es-PE');
   if(u==='minutos') return v.toLocaleString('es-PE',{maximumFractionDigits:1})+' min';
   if(u==='moneda'){
