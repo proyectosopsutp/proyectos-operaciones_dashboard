@@ -2790,25 +2790,6 @@ function renderTodo(){
   updateExecutiveSummary();
 }
 
-async function refrescarDashboardDesdeExcel(){
-  try{
-    await cargarExcelGitHub();
-    renderTodo();
-    console.info('Dashboard actualizado desde Excel de GitHub:',new Date().toLocaleTimeString('es-PE'));
-  }catch(err){
-    var status=document.getElementById('mejorasDataStatus');
-    if(status) status.textContent='';
-    console.warn('No se pudo leer el Excel de GitHub; se mantienen los últimos datos disponibles.',err);
-  }
-}
-
-async function initDashboardData(){
-  await refrescarDashboardDesdeExcel();
-
-  // Comprueba periódicamente si el Excel reemplazado en GitHub ya está disponible.
-  setInterval(refrescarDashboardDesdeExcel,15000);
-}
-
 
 /* ---------- DATA: Cobertura (Limpieza) ---------- */
 var COBERTURA = [["LIMA","SJL I",9,8,0,9,8,0,0,0,0,0,100],["LIMA","ALMACEN CENTRAL",1,0,0,1,0,0,0,0,0,0,100],["LIMA","JARRITA",3,2,0,3,2,0,0,0,0,0,100],["LIMA","TORRE NUEVA",15,15,8,15,15,8,0,0,0,0,100],["LIMA","LIMA NORTE",19,19,12,19,19,12,0,0,0,0,100],["PROVINCIA","AREQUIPA POSTGRADO",1,2,0,1,2,0,0,0,0,0,100],["PROVINCIA","CHIMBOTE",16,10,0,16,10,0,0,0,0,0,100],["PROVINCIA","PIURA",15,15,8,15,15,8,0,0,0,0,100],["PROVINCIA","TRUJILLO",8,7,0,8,7,0,0,0,0,0,100],["PROVINCIA","HUANCAYO",13,8,0,13,8,0,0,0,0,0,100],["PROVINCIA","HUANUCO",1,0,0,1,0,0,0,0,0,0,100],["PROVINCIA","IQUITOS",9,9,0,9,9,0,0,0,0,0,100],["PROVINCIA","PUCALLPA",10,9,0,10,9,0,0,0,0,0,100],["PROVINCIA","ICA",17,18,0,16,18,0,1,0,0,1,97],["LIMA","TORRE II",9,10,5,9,9,5,0,1,0,1,96],["PROVINCIA","TACNA",10,8,0,10,7,0,0,1,0,1,94],["LIMA","ATE",18,18,9,16,18,8,2,0,1,3,93],["PROVINCIA","CHICLAYO",18,17,8,18,14,8,0,3,0,3,93],["LIMA","PACIFICO",7,6,0,7,5,0,0,1,0,1,92],["LIMA","LIMA SUR",23,23,12,23,18,12,0,5,0,5,91],["LIMA","SEDE CENTRAL",9,8,5,8,7,5,1,1,0,2,91],["LIMA","OFICINAS ADMINISTRATIVA",8,1,0,7,1,0,1,0,0,1,89],["PROVINCIA","AREQUIPA I",12,9,5,10,8,5,2,1,0,3,88],["LIMA","SJL II",9,8,0,8,7,0,1,1,0,2,88],["PROVINCIA","AREQUIPA III",8,7,0,7,6,0,1,1,0,2,87],["PROVINCIA","AREQUIPA II",11,9,5,7,9,5,4,0,0,4,84],["LIMA","EPG SALAVERRY",2,3,1,2,2,1,0,1,0,1,83],["LIMA","JOSE DIAZ",4,4,0,3,3,0,1,1,0,2,75]];
