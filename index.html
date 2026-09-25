@@ -2032,7 +2032,21 @@ function nExcel(v){
   if(!Number.isFinite(n)) return 0;
   return esPorcentaje ? n/100 : n;
 }
-function pctExcel(v){ return Math.round(nExcel(v)*1000)/10; }
+function pctExcel(v){
+  // Normaliza porcentajes provenientes del Excel:
+  // - 0.90 / 0.905  -> 90 / 90.5
+  // - 90 / 90.5     -> 90 / 90.5
+  // - "90%"         -> 90
+  // Así evitamos mostrar 9000% cuando el Excel trae 90 como valor.
+  if(v===null || v===undefined || v==='') return 0;
+  var raw=String(v).trim();
+  if(!raw) return 0;
+  var hasPercent=/%$/.test(raw);
+  var n=nExcel(v);
+  if(hasPercent) return Math.round(n*1000)/10;
+  if(Math.abs(n)<=1) return Math.round(n*1000)/10*100;
+  return Math.round(n*10)/10;
+}
 function kpiExcel(modulo, indicador){
   var rows = BD_EXCEL.KPIs_HTML || [];
   return rows.find(function(r){ return r.modulo===modulo && r.indicador===indicador; });
@@ -2360,9 +2374,10 @@ function updateProjectDetailExcel(sectionId, needle){
   var detailRows=BD_EXCEL.PROYECTO_DETALLE || [];
   var detail=detailRows.find(function(x){return String(x.campus||'').trim().toLowerCase()===String(needleNorm).trim().toLowerCase();});
   if(!detail){ detail=detailRows.find(function(x){var c=String(x.campus||'').toLowerCase(); if(needleNorm.indexOf('huamanga')!==-1)return c.indexOf('huamanga')!==-1; if(needleNorm.indexOf('huanuco')!==-1)return c.indexOf('huánuco')!==-1||c.indexOf('huanuco')!==-1; if(needleNorm.indexOf('juliaca')!==-1)return c.indexOf('juliaca')!==-1; if(needleNorm.indexOf('lima norte')!==-1)return c.indexOf('lima norte')!==-1; return false;}); }
-  var implementacionRaw=detail ? detail.avance_implementacion_pct : r.avance_implementación_pct;
-  var implementacionBlank=(implementacionRaw===null || implementacionRaw===undefined || String(implementacionRaw).trim()==='');
-  var implementacion=implementacionBlank ? 0 : pctExcel(implementacionRaw);
+  // El avance de implementación se calcula siempre como el promedio
+  // entre avance de obra y avance de compras.
+  var implementacion=(obra+compras)/2;
+  var implementacionBlank=false;
 
   var obraValue=sec.querySelector('[data-kpi="obra"]');
   var comprasValue=sec.querySelector('[data-kpi="compras"]');
@@ -2376,7 +2391,7 @@ function updateProjectDetailExcel(sectionId, needle){
 
   if(obraValue) obraValue.textContent=obra+'%';
   if(comprasValue) comprasValue.textContent=compras+'%';
-  if(implementacionValue) implementacionValue.textContent=implementacionBlank ? '—' : implementacion+'%';
+  if(implementacionValue) implementacionValue.textContent=implementacion.toLocaleString('es-PE',{maximumFractionDigits:1})+'%';
 
   if(obraFill) obraFill.style.width=obra+'%';
   if(comprasFill) comprasFill.style.width=compras+'%';
