@@ -2253,10 +2253,9 @@ function renderMejorasDesdeExcel(){
   if(!body || !MEJORAS_EXCEL_COLUMNS.length) return;
 
   var q=((document.getElementById('mejSearch')||{}).value||'').trim().toLowerCase();
-  // La columna SEDE SIEMPRE corresponde a la primera columna de la hoja
-  // MEJORAS_PROGRAMACION. Así se muestra el nombre real del Excel, sin
-  // sustituirlo por nombres de otra tabla o por datos embebidos en el HTML.
-  var campusKey=MEJORAS_EXCEL_COLUMNS[0];
+  // La columna SEDE corresponde a "campus" en MEJORAS_PROGRAMACION.
+  // Se muestra el nombre real que viene del Excel.
+  var campusKey=MEJORAS_EXCEL_COLUMNS.find(function(k){ return String(k).trim().toLowerCase()==="campus"; }) || MEJORAS_EXCEL_COLUMNS[0];
 
   var rows=MEJORAS_EXCEL_ROWS.filter(function(r){
     return String(r[campusKey]??'').toLowerCase().indexOf(q)!==-1;
@@ -2400,15 +2399,18 @@ async function cargarExcelGitHub(){
     return String(name).trim().toLowerCase()==='mejoras_programacion';
   });
   if(mejorasSheetName){
-    // Normaliza SOLO la primera columna de MEJORAS_PROGRAMACION a "sede",
-    // conservando exactamente el texto que viene del Excel.
+    // MEJORAS_PROGRAMACION usa "campus" como columna de identificación.
+    // Se conserva el encabezado original del Excel y su valor exactamente como viene.
     var rawMejoras=data[mejorasSheetName] || [];
     data.MEJORAS_PROGRAMACION=rawMejoras.map(function(row){
       var out={};
       var keys=Object.keys(row||{});
       if(keys.length){
-        out.sede = row[keys[0]]===null || row[keys[0]]===undefined ? '' : String(row[keys[0]]);
-        for(var ki=1; ki<keys.length; ki++){ out[keys[ki]]=row[keys[ki]]; }
+        var campusKey=keys.find(function(k){ return String(k).trim().toLowerCase()==='campus'; }) || keys[0];
+        out.campus = row[campusKey]===null || row[campusKey]===undefined ? '' : String(row[campusKey]);
+        keys.forEach(function(key){
+          if(key!==campusKey) out[key]=row[key];
+        });
       }
       return out;
     });
