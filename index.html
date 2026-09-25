@@ -1949,11 +1949,16 @@ function starsHTML(val){
 }
 
 
-/* ---------- Fuente de datos: Google Sheets + respaldo Excel de GitHub ---------- */
+/* ---------- Fuente de datos: Google Sheets (vía proxy Apps Script) + respaldo Excel de GitHub ---------- */
 // Google Sheets es la fuente principal. El Excel de GitHub queda como respaldo.
-// La hoja debe mantenerse publicada en la Web para que el dashboard público pueda leerla.
+// IMPORTANTE: no se llama directo a docs.google.com/export porque el navegador
+// bloquea esa respuesta por CORS. En su lugar se llama a un Web App de Google
+// Apps Script (ver Code.gs) que exporta el Sheet server-side y lo entrega en
+// base64, sin restricciones de CORS.
+// Reemplaza esta URL por la tuya después de publicar el Apps Script como app web
+// (Implementar > Nueva implementación > Aplicación web > copiar la URL /exec).
 var GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1YMIwxBzFM_kwAW77fCCcGTZmsx_hmOTi/edit';
-var GOOGLE_SHEETS_XLSX_URL = 'https://docs.google.com/spreadsheets/d/1YMIwxBzFM_kwAW77fCCcGTZmsx_hmOTi/export?format=xlsx';
+var GOOGLE_SHEETS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbxyI9Z-_AYzqLCZTgw4KfR4EC3hLc-OqvCkCcuqREwcCtOHBWqhgZN6qBMUkFHPBg/exec';
 var EXCEL_GITHUB_FILENAME = 'BD_dashboard_operaciones_github.xlsx';
 var EXCEL_GITHUB_URLS = [
   new URL(EXCEL_GITHUB_FILENAME, document.baseURI).href
@@ -2580,13 +2585,22 @@ function updateImplementacionesExcel(){
     if(r.url) card.href=r.url;
   });
 }
-async function leerWorkbookDesdeUrl(url, nombreFuente){
+async function leerWorkbookDesdeUrl(url, nombreFuente, tipo){
   if(typeof XLSX==='undefined') throw new Error('No se cargó el lector de Excel (SheetJS).');
   var u=url+(url.indexOf('?')===-1?'?':'&')+'v='+Date.now();
   var rr=await fetch(u,{cache:'no-store',redirect:'follow'});
   if(!rr.ok) throw new Error('HTTP '+rr.status+' para '+url);
-  var buffer=await rr.arrayBuffer();
-  var workbook=XLSX.read(buffer,{type:'array',cellDates:false});
+  var workbook;
+  if(tipo==='base64'){
+    // Respuesta del proxy de Apps Script: texto plano en base64.
+    var texto=await rr.text();
+    if(texto.indexOf('ERROR')===0) throw new Error('El proxy de Apps Script respondió: '+texto);
+    workbook=XLSX.read(texto,{type:'base64',cellDates:false});
+  }else{
+    // Archivo binario directo (respaldo Excel de GitHub).
+    var buffer=await rr.arrayBuffer();
+    workbook=XLSX.read(buffer,{type:'array',cellDates:false});
+  }
   var data={};
 
   workbook.SheetNames.forEach(function(sheetName){
@@ -2690,7 +2704,7 @@ async function cargarExcelGitHub(){
 }
 
 async function cargarGoogleSheets(){
-  var data=await leerWorkbookDesdeUrl(GOOGLE_SHEETS_XLSX_URL,'Google Sheets');
+  var data=await leerWorkbookDesdeUrl(GOOGLE_SHEETS_PROXY_URL,'Google Sheets',"base64");
   aplicarDatosRemotos(data,'Google Sheets');
   DATA_SOURCE_ACTIVE='Google Sheets';
 }
