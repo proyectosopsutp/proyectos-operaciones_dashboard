@@ -1949,14 +1949,18 @@ function starsHTML(val){
 }
 
 
-/* ---------- Fuente de datos: Excel de GitHub ---------- */
-// Archivo Excel que debe estar en la MISMA carpeta que index.html en GitHub Pages.
+/* ---------- Fuente de datos: Google Sheets + respaldo Excel de GitHub ---------- */
+// Google Sheets es la fuente principal. El Excel de GitHub queda como respaldo.
+// La hoja debe mantenerse publicada en la Web para que el dashboard público pueda leerla.
+var GOOGLE_SHEETS_PUBLISHED_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTePAAad2CmO5TY4yJWliQoSD5tvGQejwPcGdh6zPJs6wpK4JE5aAlZibUsjNQOBw/pubhtml';
+var GOOGLE_SHEETS_XLSX_URL = GOOGLE_SHEETS_PUBLISHED_URL.replace(/\/pubhtml(?:\?.*)?$/,'/pub?output=xlsx');
 var EXCEL_GITHUB_FILENAME = 'BD_dashboard_operaciones_github.xlsx';
 var EXCEL_GITHUB_URLS = [
   new URL(EXCEL_GITHUB_FILENAME, document.baseURI).href
 ];
 var EXCEL_GITHUB_URL = EXCEL_GITHUB_URLS[0];
 var BD_EXCEL = {MEJORAS_PROGRAMACION: [], BD_INICIATIVAS: []};
+var DATA_SOURCE_ACTIVE = 'Google Sheets';
 var DASH_CONFIG = {};
 var EXCEL_HEADERS = [];
 function dashboardConfig(key, fallback){
@@ -2576,25 +2580,12 @@ function updateImplementacionesExcel(){
     if(r.url) card.href=r.url;
   });
 }
-async function cargarExcelGitHub(){
+async function leerWorkbookDesdeUrl(url, nombreFuente){
   if(typeof XLSX==='undefined') throw new Error('No se cargó el lector de Excel (SheetJS).');
-
-  var resp=null, buffer=null, lastError=null;
-  for(var ui=0; ui<EXCEL_GITHUB_URLS.length; ui++){
-    var candidate=EXCEL_GITHUB_URLS[ui]+(EXCEL_GITHUB_URLS[ui].indexOf('?')===-1?'?':'&')+'v='+Date.now();
-    try{
-      var rr=await fetch(candidate,{cache:'no-store',redirect:'follow'});
-      if(rr.ok){
-        resp=rr;
-        EXCEL_GITHUB_URL=EXCEL_GITHUB_URLS[ui];
-        buffer=await rr.arrayBuffer();
-        break;
-      }
-      lastError=new Error('HTTP '+rr.status+' para '+EXCEL_GITHUB_URLS[ui]);
-    }catch(e){ lastError=e; }
-  }
-  if(!resp || !buffer) throw (lastError || new Error('No se pudo leer el Excel de GitHub'));
-
+  var u=url+(url.indexOf('?')===-1?'?':'&')+'v='+Date.now();
+  var rr=await fetch(u,{cache:'no-store',redirect:'follow'});
+  if(!rr.ok) throw new Error('HTTP '+rr.status+' para '+url);
+  var buffer=await rr.arrayBuffer();
   var workbook=XLSX.read(buffer,{type:'array',cellDates:false});
   var data={};
 
@@ -2608,8 +2599,6 @@ async function cargarExcelGitHub(){
     return String(name).trim().toLowerCase()==='mejoras_programacion';
   });
   if(mejorasSheetName){
-    // MEJORAS_PROGRAMACION usa "campus" como columna de identificación.
-    // Se conserva el encabezado original del Excel y su valor exactamente como viene.
     var rawMejoras=data[mejorasSheetName] || [];
     data.MEJORAS_PROGRAMACION=rawMejoras.map(function(row){
       var out={};
@@ -2617,16 +2606,14 @@ async function cargarExcelGitHub(){
       if(keys.length){
         var campusKey=keys.find(function(k){ return String(k).trim().toLowerCase()==='campus'; }) || keys[0];
         out.campus = row[campusKey]===null || row[campusKey]===undefined ? '' : String(row[campusKey]);
-        keys.forEach(function(key){
-          if(key!==campusKey) out[key]=row[key];
-        });
+        keys.forEach(function(key){ if(key!==campusKey) out[key]=row[key]; });
       }
       return out;
     });
   }
 
   // La pestaña Resumen de Iniciativas reproduce la tabla dinámica TD
-  // a partir de BD_INICIATIVAS cuando esa hoja existe en el Excel conectado.
+  // a partir de BD_INICIATIVAS cuando esa hoja existe.
   var bdSheetName=workbook.SheetNames.find(function(name){
     return String(name).trim().toLowerCase()==='bd_iniciativas';
   }) || workbook.SheetNames.find(function(name){
@@ -2634,16 +2621,14 @@ async function cargarExcelGitHub(){
   });
   if(bdSheetName){
     var bdWs=workbook.Sheets[bdSheetName];
-    // BD_INICIATIVAS tiene sus encabezados en la fila 6; se detecta para no
-    // interpretar las filas de presupuesto superiores como encabezados.
     var ref=bdWs && bdWs['!ref'] ? XLSX.utils.decode_range(bdWs['!ref']) : null;
     var headerRow=5;
     if(ref){
-      for(var rr=0; rr<=Math.min(ref.e.r,20); rr++){
+      for(var rr2=0; rr2<=Math.min(ref.e.r,20); rr2++){
         var vals=[];
-        for(var cc=ref.s.c; cc<=ref.e.c; cc++) vals.push(bdWs[XLSX.utils.encode_cell({r:rr,c:cc})]?.v ?? '');
+        for(var cc=ref.s.c; cc<=ref.e.c; cc++) vals.push(bdWs[XLSX.utils.encode_cell({r:rr2,c:cc})]?.v ?? '');
         var txt=vals.map(function(v){return String(v||'').trim().toUpperCase();});
-        if(txt.some(function(v){return v==='CAMPUS';}) && txt.some(function(v){return v.indexOf('ESTADO')===0 || v.indexOf('ESTADO\nPROYECTO')===0;})){headerRow=rr;break;}
+        if(txt.some(function(v){return v==='CAMPUS';}) && txt.some(function(v){return v.indexOf('ESTADO')===0 || v.indexOf('ESTADO\nPROYECTO')===0;})){headerRow=rr2;break;}
       }
     }
     var bdRows=XLSX.utils.sheet_to_json(bdWs,{defval:'',raw:true,range:headerRow});
@@ -2654,10 +2639,11 @@ async function cargarExcelGitHub(){
     if(tdEstado) data.MEJORAS_ESTADO=tdEstado;
   }
 
-  if(!data || !data.KPIs_HTML) throw new Error('El Excel no contiene la hoja KPIs_HTML.');
+  if(!data || !data.KPIs_HTML) throw new Error('La fuente '+nombreFuente+' no contiene la hoja KPIs_HTML.');
+  return data;
+}
 
-  // El Excel de GitHub es la fuente principal. Los datos embebidos en el HTML
-  // solo quedan como respaldo si el archivo no puede cargarse.
+function aplicarDatosRemotos(data, nombreFuente){
   BD_EXCEL=data;
   applyDashboardConfigData();
 
@@ -2665,11 +2651,7 @@ async function cargarExcelGitHub(){
     ? BD_EXCEL.MEJORAS_PROGRAMACION.filter(function(r){return r && Object.keys(r).length;})
     : [];
 
-  if(!remoto.length){
-    throw new Error('El Excel no contiene datos en la hoja MEJORAS_PROGRAMACION.');
-  }
-
-  // Conserva exactamente las filas y columnas del Excel remoto.
+  if(!remoto.length) throw new Error('La fuente '+nombreFuente+' no contiene datos en la hoja MEJORAS_PROGRAMACION.');
   BD_EXCEL.MEJORAS_PROGRAMACION=remoto;
 
   syncMejorasTableSchema();
@@ -2686,13 +2668,61 @@ async function cargarExcelGitHub(){
   updateImplementacionesExcel();
   applyConfigExcel();
   updateExecutiveSummary();
-
-  // Fuerza el render de la tabla después de leer el Excel.
   renderMejorasDesdeExcel();
   applyExcelHeaderLabels();
+
   var status=document.getElementById('mejorasDataStatus');
-  if(status) status.textContent='Excel conectado · MEJORAS_PROGRAMACION · '+remoto.length+' sedes cargadas.';
+  if(status) status.textContent=nombreFuente+' conectado · MEJORAS_PROGRAMACION · '+remoto.length+' sedes cargadas.';
 }
+
+async function cargarExcelGitHub(){
+  var lastError=null;
+  for(var ui=0; ui<EXCEL_GITHUB_URLS.length; ui++){
+    try{
+      var data=await leerWorkbookDesdeUrl(EXCEL_GITHUB_URLS[ui],'Excel de GitHub');
+      EXCEL_GITHUB_URL=EXCEL_GITHUB_URLS[ui];
+      aplicarDatosRemotos(data,'Excel de GitHub');
+      DATA_SOURCE_ACTIVE='Excel de GitHub';
+      return;
+    }catch(e){ lastError=e; }
+  }
+  throw (lastError || new Error('No se pudo leer el Excel de GitHub'));
+}
+
+async function cargarGoogleSheets(){
+  var data=await leerWorkbookDesdeUrl(GOOGLE_SHEETS_XLSX_URL,'Google Sheets');
+  aplicarDatosRemotos(data,'Google Sheets');
+  DATA_SOURCE_ACTIVE='Google Sheets';
+}
+
+async function refrescarDashboardDesdeExcel(){
+  var status=document.getElementById('mejorasDataStatus');
+  try{
+    // Primero Google Sheets: es la fuente online que se actualiza cuando editas la base.
+    await cargarGoogleSheets();
+    if(status) status.textContent='Google Sheets conectado · actualización online';
+    renderTodo();
+    console.info('Dashboard actualizado desde Google Sheets:',new Date().toLocaleTimeString('es-PE'));
+  }catch(errGoogle){
+    console.warn('No se pudo leer Google Sheets. Se intenta el Excel de GitHub como respaldo.',errGoogle);
+    try{
+      await cargarExcelGitHub();
+      if(status) status.textContent='Respaldo Excel de GitHub conectado · Google Sheets no disponible';
+      renderTodo();
+      console.info('Dashboard actualizado desde el Excel de GitHub:',new Date().toLocaleTimeString('es-PE'));
+    }catch(errGitHub){
+      if(status) status.textContent='';
+      console.warn('No se pudo leer Google Sheets ni el Excel de GitHub. Se mantienen los últimos datos disponibles.',errGitHub);
+    }
+  }
+}
+
+async function initDashboardData(){
+  await refrescarDashboardDesdeExcel();
+  // Comprueba periódicamente si la base online fue actualizada.
+  setInterval(refrescarDashboardDesdeExcel,60000);
+}
+
 function updateExecutiveSummary(){
   // El Resumen Ejecutivo toma sus indicadores directamente de las demás pestañas.
   // Así evita valores fijos y se mantiene sincronizado cuando se actualiza el Excel.
